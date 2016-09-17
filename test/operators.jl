@@ -70,6 +70,7 @@ module TestOperators
     # test all types and operators (including null-unsafe ones)
     for S in Union{NullableArrays.SafeTypes, BigInt, BigFloat}.types,
         T in Union{NullableArrays.SafeTypes, BigInt, BigFloat}.types
+@show S, T
         u0 = zero(S)
         u1 = one(S)
         u2 = S <: Union{BigInt, BigFloat} ? S(rand(Int128)) : rand(S)
@@ -77,11 +78,12 @@ module TestOperators
         v0 = zero(T)
         v1 = one(T)
         v2 = T <: Union{BigInt, BigFloat} ? T(rand(Int128)) : rand(T)
-
+@show v2
         abs(v2) > 5 && (v2 = T(5)) # Work around JuliaLang/julia#16989
-
+@show v2
         # safe unary operators
         for op in (+, -, ~, abs, abs2, cbrt)
+@show op
             T <: AbstractFloat && op == (~) && continue
 
             R = Base.promote_op(op, T)
@@ -103,7 +105,6 @@ module TestOperators
             x = op(Nullable())
             @test isa(x, Nullable{Union{}}) && isnull(x)
         end
-
         # unsafe unary operators
         # sqrt
         @test_throws DomainError sqrt(Nullable(ensure_neg(v1)))
@@ -112,7 +113,11 @@ module TestOperators
         @test isa(x, Nullable{R}) && isequal(x, Nullable(sqrt(v0)))
         x = sqrt(Nullable(v1))
         @test isa(x, Nullable{R}) && isequal(x, Nullable(sqrt(v1)))
-        x = sqrt(Nullable(abs(v2)))
+@show v2, typeof(v2)
+@show abs(v2), typeof(abs(v2))
+@show Nullable(abs(v2)), typeof(Nullable(abs(v2)))
+@show sqrt(Nullable(abs(v2))), typeof(sqrt(Nullable(abs(v2))))
+@show        x = sqrt(Nullable(abs(v2)))
         @test isa(x, Nullable{R}) && isequal(x, Nullable(sqrt(abs(v2))))
         x = sqrt(Nullable(v0, true))
         @test isa(x, Nullable{R}) && isnull(x)
@@ -122,10 +127,8 @@ module TestOperators
         @test isa(x, Nullable{R}) && isnull(x)
         x = sqrt(Nullable{R}())
         @test isa(x, Nullable{R}) && isnull(x)
-
         x = sqrt(Nullable())
         @test isa(x, Nullable{Union{}}) && isnull(x)
-
         for u in (u0, u1, u2), v in (v0, v1, v2)
             # safe binary operators
             for op in (+, -, *, /, &, |, >>, <<, >>>,
